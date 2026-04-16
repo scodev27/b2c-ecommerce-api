@@ -1,20 +1,57 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello AdminController!{% endblock %}
+{% block title %}Backoffice - Terra a Casa{% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
-</style>
+    <div class="container mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>📦 Panell de Comandes</h1>
+            <a href="{{ path('app_logout') }}" class="btn btn-outline-danger">Tancar Sessió</a>
+        </div>
 
-<div class="example-wrapper">
-    <h1>Hello {{ controller_name }}! ✅</h1>
-
-    This friendly message is coming from:
-    <ul>
-        <li>Your controller at <code>C:/Users/User/Desktop/terra_a_casa/src/Controller/AdminController.php</code></li>
-        <li>Your template at <code>C:/Users/User/Desktop/terra_a_casa/templates/admin/index.html.twig</code></li>
-    </ul>
-</div>
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <table class="table table-hover align-middle">
+                    <thead class="table-dark">
+                    <tr>
+                        <th>ID Comanda</th>
+                        <th>Email Client</th>
+                        <th>Data</th>
+                        <th>Total</th>
+                        <th>Estat</th>
+                        <th>Acció</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for order in orders %}
+                        <tr>
+                            <td><small class="text-muted">{{ order.id }}</small></td>
+                            <td><strong>{{ order.clientEmail }}</strong></td>
+                            <td>{{ order.createdAt|date('d/m/Y H:i') }}</td>
+                            <td>{{ (order.totalPrice / 100)|number_format(2, ',', '.') }} €</td>
+                            <td>
+                                {% if order.status == 'pending' %}
+                                    <span class="badge bg-warning text-dark">Pendent</span>
+                                {% elseif order.status == 'processing' %}
+                                    <span class="badge bg-info text-dark">En preparació</span>
+                                {% elseif order.status == 'delivering' %}
+                                    <span class="badge bg-primary">En repartiment</span>
+                                {% else %}
+                                    <span class="badge bg-success">Lliurat</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-secondary" disabled>Gestionar</button>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">Encara no hi ha cap comanda registrada.</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 {% endblock %}
