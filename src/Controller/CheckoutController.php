@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Order;
+use App\Message\SendEmailMessage;
 use App\Repository\ProductRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Stripe\Checkout\Session;
@@ -11,6 +12,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
@@ -88,11 +90,14 @@ class CheckoutController extends AbstractController
     public function success(
         Order $order,
         EntityManagerInterface $entityManager,
-        RequestStack $requestStack
+        RequestStack $requestStack,
+        MessageBusInterface $messageBus
     ): Response {
         if ($order->getStatus() === 'pending') {
             $order->setStatus('processing');
             $entityManager->flush();
+
+            $messageBus->dispatch(new SendEmailMessage((string) $order->getId(), $order->getClientEmail()));
         }
 
         $session = $requestStack->getSession();

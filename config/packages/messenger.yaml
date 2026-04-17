@@ -1,0 +1,9 @@
+framework:
+    messenger:
+        transports:
+            # 1. Creem el canal "async" i li diem que guardi la cua a la nostra base de dades (Doctrine)
+            async: 'doctrine://default'
+
+        routing:
+            # 2. Li diem que TOTS els missatges de tipus SendEmailMessage s'enviïn al canal "async"
+            'App\Message\SendEmailMessage': async
