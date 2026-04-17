@@ -12,6 +12,8 @@
         "doctrine/doctrine-bundle": "^2.18",
         "doctrine/doctrine-migrations-bundle": "^3.7",
         "doctrine/orm": "^3.6",
+        "nelmio/api-doc-bundle": "^5.10",
+        "phpdocumentor/reflection-docblock": "^6.0",
         "stripe/stripe-php": "^20.0",
         "symfony/asset": "7.4.*",
         "symfony/console": "7.4.*",
