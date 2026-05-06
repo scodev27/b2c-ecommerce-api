@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terra a Casa - Botiga</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .cursor-pointer { cursor: pointer; }
+        .hidden { display: none !important; }
+        .card-img-top { height: 250px; object-fit: cover; }
+        .nav-cart-btn { min-width: 120px; }
+    </style>
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-success mb-4 shadow-sm sticky-top">
+    <div class="container">
+        <a class="navbar-brand fw-bold cursor-pointer" onclick="canviarVista('llista')">🌱 Terra a Casa</a>
+        <button class="btn btn-light position-relative nav-cart-btn" onclick="canviarVista('carreto')">
+            🛒 Carretó
+            <span id="badge-carreto" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                0
+            </span>
+        </button>
+    </div>
+</nav>
+
+<div class="container pb-5">
+
+    <div id="vista-llista">
+        <h2 class="text-center mb-4 text-success fw-bold">Les nostres capses ecològiques</h2>
+        <div id="contenidor-productes" class="row">
+        </div>
+    </div>
+
+    <div id="vista-detall" class="hidden">
+        <button class="btn btn-outline-secondary mb-4" onclick="canviarVista('llista')">← Tornar a la botiga</button>
+        <div class="card shadow-sm border-0 overflow-hidden">
+            <div class="row g-0" id="contenidor-detall">
+            </div>
+        </div>
+    </div>
+
+    <div id="vista-carreto" class="hidden">
+        <button class="btn btn-outline-secondary mb-4" onclick="canviarVista('llista')">← Continuar comprant</button>
+        <h2 class="mb-4 text-success fw-bold">El teu Carretó</h2>
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-0" id="contingut-carreto">
+            </div>
+        </div>
+
+        <div id="zona-pagament" class="text-end hidden">
+            <h3 class="mb-3 text-muted">Total a pagar: <span id="total-carreto" class="fw-bold text-dark">0.00</span> €</h3>
+            <button onclick="finalitzarCompra()" class="btn btn-success btn-lg px-5 shadow">💳 Finalitzar Compra</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const API_URL = 'http://localhost:8000/api';
+    const IMG_URL = 'http://localhost:8000/images/';
+    let carreto = [];
+
+    function inicialitzarApp() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (window.location.href.includes('checkout/success') || urlParams.get('clear_cart')) {
+            localStorage.removeItem('meu_carreto');
+            carreto = [];
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } else {
+            carreto = JSON.parse(localStorage.getItem('meu_carreto')) || [];
+        }
+        actualitzarBadge();
+        carregarProductes();
+    }
+
+    function actualitzarBadge() {
+        document.getElementById('badge-carreto').innerText = carreto.length;
+    }
+
+    function canviarVista(vista) {
+        document.getElementById('vista-llista').classList.add('hidden');
+        document.getElementById('vista-detall').classList.add('hidden');
+        document.getElementById('vista-carreto').classList.add('hidden');
+
+        if (vista === 'llista') {
+            document.getElementById('vista-llista').classList.remove('hidden');
+            window.scrollTo(0,0);
+        } else if (vista === 'detall') {
+            document.getElementById('vista-detall').classList.remove('hidden');
+            window.scrollTo(0,0);
+        } else if (vista === 'carreto') {
+            document.getElementById('vista-carreto').classList.remove('hidden');
+            renderitzarCarreto();
+        }
+    }
+
+    function carregarProductes() {
+        fetch(`${API_URL}/products`)
+            .then(res => res.json())
+            .then(productes => {
+                const contenidor = document.getElementById('contenidor-productes');
+                contenidor.innerHTML = '';
+                productes.forEach(p => {
+                    const rutaImatge = p.image ? `${IMG_URL}${p.image}` : 'https://via.placeholder.com/400x300?text=Producte';
+                    contenidor.innerHTML += `
+                        <div class="col-md-4 mb-4">
+                            <div class="card h-100 shadow-sm border-0 cursor-pointer" onclick="veureDetall('${p.id}')">
+                                <img src="${rutaImatge}" class="card-img-top" alt="${p.name}">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title fw-bold">${p.name}</h5>
+                                    <p class="card-text text-success fs-4 fw-bold">${p.price} €</p>
+                                    <button class="btn btn-outline-success w-100">Veure Detalls</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+    }
+
+    function veureDetall(id) {
+        fetch(`${API_URL}/products/${id}`)
+            .then(res => res.json())
+            .then(p => {
+                const contenidor = document.getElementById('contenidor-detall');
+                const rutaImatge = p.image ? `${IMG_URL}${p.image}` : 'https://via.placeholder.com/600x600?text=Producte';
+                contenidor.innerHTML = `
+                    <div class="col-md-6">
+                        <img src="${rutaImatge}" class="img-fluid h-100" style="object-fit: cover; min-height: 400px;">
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card-body p-5">
+                            <h1 class="display-5 fw-bold text-success">${p.name}</h1>
+                            <h2 class="text-dark my-3">${p.price} €</h2>
+                            <p class="lead text-muted">${p.description || 'Producte fresc de proximitat, collit el mateix matí per garantir la màxima qualitat a la teva taula.'}</p>
+
+                            <div class="bg-light p-3 rounded my-4">
+                                <p class="mb-1">🚚 <strong>Lliurament:</strong> 24-48 hores</p>
+                                <p class="mb-0">📍 <strong>Origen:</strong> Maresme / Baix Llobregat (Km 0)</p>
+                            </div>
+
+                            <button onclick="afegirAlCarreto('${p.id}', '${p.name}', ${p.price})" class="btn btn-success btn-lg w-100 py-3 shadow-sm">
+                                🛒 Afegir al carretó
+                            </button>
+                        </div>
+                    </div>
+                `;
+                canviarVista('detall');
+            });
+    }
+
+    function afegirAlCarreto(id, nom, preu) {
+        carreto.push({ id, nom, preu });
+        localStorage.setItem('meu_carreto', JSON.stringify(carreto));
+        actualitzarBadge();
+        alert(`"${nom}" s'ha afegit correctament!`);
+        canviarVista('carreto');
+    }
+
+    function renderitzarCarreto() {
+        const contingut = document.getElementById('contingut-carreto');
+        const zonaPagament = document.getElementById('zona-pagament');
+
+        if (carreto.length === 0) {
+            contingut.innerHTML = '<div class="p-5 text-center"><p class="text-muted fs-5">El teu carretó està buit encara. 🌱</p></div>';
+            zonaPagament.classList.add('hidden');
+            return;
+        }
+
+        let total = 0;
+        let html = '<ul class="list-group list-group-flush">';
+        carreto.forEach((item, index) => {
+            total += parseFloat(item.preu);
+            html += `
+                <li class="list-group-item d-flex justify-content-between align-items-center p-4">
+                    <h5 class="mb-0 fw-bold">${item.nom}</h5>
+                    <div class="d-flex align-items-center">
+                        <span class="fs-5 me-4">${item.preu} €</span>
+                        <button onclick="eliminarDelCarreto(${index})" class="btn btn-outline-danger btn-sm">🗑️</button>
+                    </div>
+                </li>
+            `;
+        });
+        html += '</ul>';
+        contingut.innerHTML = html;
+        document.getElementById('total-carreto').innerText = total.toFixed(2);
+        zonaPagament.classList.remove('hidden');
+    }
+
+    function eliminarDelCarreto(index) {
+        carreto.splice(index, 1);
+        localStorage.setItem('meu_carreto', JSON.stringify(carreto));
+        actualitzarBadge();
+        renderitzarCarreto();
+    }
+
+    function finalitzarCompra() {
+        if (carreto.length === 0) return;
+
+        const emailClient = prompt("Introdueix el teu correu electrònic per a la confirmació:");
+        if (!emailClient) {
+            alert("Has d'introduir un email per continuar.");
+            return;
+        }
+
+        const totalCentims = Math.round(carreto.reduce((sum, item) => sum + parseFloat(item.preu), 0) * 100);
+
+        fetch(`${API_URL}/order`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: emailClient,
+                product_id: carreto[0].id,
+                total_price: totalCentims
+            })
+        })
+            .then(res => {
+                if (!res.ok) return res.json().then(err => { throw new Error(err.error || "Error al servidor"); });
+                return res.json();
+            })
+            .then(dades => {
+                if(dades.payment_url) window.location.href = dades.payment_url;
+            })
+            .catch(err => {
+                alert("Error: " + err.message);
+            });
+    }
+
+    inicialitzarApp();
+</script>
+</body>
+</html>
