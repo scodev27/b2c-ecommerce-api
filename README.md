@@ -40,16 +40,21 @@ symfony server:start
 
 *Terminal 2 (Worker de processos asíncrons per a l'enviament de correus):*
 ```bash
-php bin/console messenger:consume async -vv
+php bin/console messenger:consume async -vv --no-debug
 ```
 ---
 
 ## 📡 Documentació de l'API
 
-El projecte exposa un endpoint de lectura per a consultar els productes disponibles des d'altres aplicacions de l'empresa. 
+El projecte exposa diversos endpoints per interactuar amb la plataforma des d'aplicacions externes (com una App mòbil o un servei de tercers):
 
-*   **Ruta API:** `GET /api/products`
-*   **Retorn:** Format JSON amb els detalls de les capses (ID, nom, descripció, preu, imatge i estoc).
+*   **Llistar productes:** `GET /api/products`
+    *   **Retorn:** Format JSON amb els detalls bàsics de les capses (ID, nom i preu).
+*   **Detall d'un producte:** `GET /api/products/{id}`
+    *   **Retorn:** Format JSON amb tota la informació ampliada (ID, nom, descripció, preu, imatge i estoc).
+*   **Crear una comanda:** `POST /api/order`
+    *   **Petició (Body):** Requereix un JSON amb l'`email` del client i el `product_id`.
+    *   **Retorn:** Genera la comanda, desencadena l'enviament asíncron del correu electrònic i retorna un JSON amb el `transaction_id` i la `payment_url` (enllaç de pagament segur de Stripe).
 
 ### 📖 Swagger UI
 Per fer fàcil l'exploració i prova dels endpoints, s'ha implementat **NelmioApiDocBundle**, que autogenera la documentació interactiva sota l'estàndard OpenAPI.
