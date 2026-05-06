@@ -1,9 +1,6 @@
-###> symfony/framework-bundle ###
-/backend_terra_a_casa/.env.local
-/backend_terra_a_casa/.env.local.php
-/backend_terra_a_casa/.env.*.local
-/backend_terra_a_casa/config/secrets/prod/prod.decrypt.private.php
-/backend_terra_a_casa/public/bundles/
-/backend_terra_a_casa/var/
-/backend_terra_a_casa/vendor/
-###< symfony/framework-bundle ###
+.idea/
+/terra_a_casa/.env.local
+/terra_a_casa/.env.*.local
+/terra_a_casa/public/bundles/
+/terra_a_casa/var/
+/terra_a_casa/vendor/
