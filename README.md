@@ -84,5 +84,24 @@ Per visualitzar la documentació del servei (un cop el servidor estigui engegat)
 
 👉 `http://localhost:8000/api/doc`
 
+## 🧩 Esquema dels Serveis
+
+El sistema funciona mitjançant una arquitectura de microserveis lleugera on interactuen les següents peces:
+
+1.  **Frontend (Client):** Aplicació SPA (Single Page Application) amb HTML/JS Vanilla que s'executa al navegador del client. Consumeix les dades via HTTP `fetch`.
+2.  **API REST (Backend):** Servidor Symfony que actua com a "cervell" central. Rep les peticions del Frontend i processa la lògica de negoci.
+3.  **Base de Dades:** MariaDB/MySQL que emmagatzema persistentment el catàleg i les vendes. Només es comunica amb el Backend (mitjançant l'ORM Doctrine).
+4.  **Stripe API (Gateway de pagament):** Servei extern. El Backend s'hi connecta de servidor a servidor per demanar una sessió de pagament segura i retorna la URL al Frontend.
+5.  **Messenger Worker (Processos Asíncrons):** Servei en segon pla del Backend que s'encarrega d'enviar els correus electrònics sense bloquejar la resposta ràpida cap al client.
+
 ### 🔐 Autenticació
 Actualment, l'endpoint `/api/products` és de caràcter públic per permetre la visualització del catàleg sense registre previ, alineant-se amb l'experiència d'usuari de la web principal on qualsevol visitant pot veure l'aparador sense estar autenticat. L'autenticació queda reservada exclusivament per al Backoffice (ruta `/admin` i `/login`).
+
+## 🗄️ Base de Dades i Taules
+
+L'estructura de la base de dades s'ha dissenyat de manera relacional. S'adjunta el fitxer `terra_a_casa.sql` amb el bolcat sencer de l'estructura i les dades de prova. Les taules principals creades són:
+
+*   `user`: Emmagatzema les credencials dels administradors (email, password encriptat i rols) per accedir al Backoffice.
+*   `product`: Catàleg de la botiga (nom, descripció, preu, imatge i estoc).
+*   `order`: Registre de les comandes creades (email del client, preu total, estat del pagament, session_id de Stripe i data).
+*   `messenger_messages`: Taula interna de Symfony per gestionar la cua de correus electrònics asíncrons.
