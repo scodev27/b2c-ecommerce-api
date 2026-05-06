@@ -1,5 +1,20 @@
 # Terra a Casa
 Aquest projecte és el desenvolupament de l'assignatura Sistemes de Comerç Electrònic. És una aplicació web B2C construïda amb **Symfony** que posa en contacte pagesos amb clients finals per a la venda de capses de verdura fresca.
+
+## 🚀 Desplegament i Ports
+
+Per executar aquest projecte correctament, calen dos servidors funcionant de forma simultània:
+
+1. **Backend (Symfony + Base de dades):**
+   - Executar: `symfony server:start`
+   - Port: `http://localhost:8000`
+   - L'API respondrà sota `/api` i el Backoffice d'administració està a `/admin`.
+
+2. **Frontend (Botiga per als clients):**
+   - Executar mitjançant Live Server (VS Code) o similar.
+   - Port: `http://localhost:5500`
+   - Aquesta és la interfície principal on els usuaris fan les compres.
+
 ## 📦 Manual de Desplegament
 
 A continuació es detallen les comandes pas a pas per posar en marxa el projecte en un entorn local:
@@ -42,6 +57,12 @@ symfony server:start
 ```bash
 php bin/console messenger:consume async -vv --no-debug
 ```
+
+*Terminal 3 (Servidor Frontend - Botiga per als clients):*
+```bash
+php -S localhost:5500
+```
+
 ---
 
 ## 📡 Documentació de l'API
