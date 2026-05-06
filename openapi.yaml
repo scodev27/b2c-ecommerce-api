@@ -1,0 +1,58 @@
+openapi: 3.0.0
+info:
+  title: API Terra a Casa
+  description: API per a la gestió de productes i comandes de la botiga ecològica.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000/api
+    description: Servidor de desenvolupament local
+paths:
+  /products:
+    get:
+      summary: Llista tots els productes
+      responses:
+        '200':
+          description: Llista de productes retornada correctament
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: string }
+                    name: { type: string }
+                    price: { type: number }
+                    image: { type: string }
+  /products/{id}:
+    get:
+      summary: Obté el detall d'un producte
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detall del producte
+        '404':
+          description: Producte no trobat
+  /order:
+    post:
+      summary: Crea una nova comanda i genera la sessió de pagament
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, example: "client@email.com" }
+                product_id: { type: string }
+                total_price: { type: number, description: "Preu total en cèntims" }
+      responses:
+        '200':
+          description: Retorna la URL de pagament de Stripe
+        '400':
+          description: Falten dades (email o product_id)
