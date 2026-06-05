@@ -5,7 +5,9 @@ namespace App\Controller\Api;
 use App\Entity\Order;
 use App\Message\SendEmailMessage;
 use App\Repository\ProductRepository;
+use App\Service\CacheManager;
 use Doctrine\ORM\EntityManagerInterface;
+use OpenApi\Attributes as OA;
 use Stripe\Checkout\Session;
 use Stripe\Stripe;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -14,23 +16,21 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Contracts\Cache\CacheInterface;
-use Symfony\Contracts\Cache\ItemInterface;
 
 #[Route('/api')]
 class ProductApiController extends AbstractController
 {
     #[Route('/products', name: 'api_products_list', methods: ['GET'])]
-    public function list(ProductRepository $productRepository, CacheInterface $cache): JsonResponse
+    public function list(ProductRepository $productRepository, CacheManager $cacheManager): JsonResponse
     {
-        $data = $cache->get('productes_cataleg', function (ItemInterface $item) use ($productRepository) {
-            $item->expiresAfter(3600);
+        $data = $cacheManager->get('productes_cataleg');
 
+        if (!$data) {
             $products = $productRepository->findAll();
-            $result = [];
+            $data = [];
 
             foreach ($products as $product) {
-                $result[] = [
+                $data[] = [
                     'id' => $product->getId(),
                     'name' => $product->getName(),
                     'price' => $product->getPrice() / 100,
@@ -38,27 +38,27 @@ class ProductApiController extends AbstractController
                 ];
             }
 
-            return $result;
-        });
+            $cacheManager->set('productes_cataleg', $data, 3600);
+        }
 
         return new JsonResponse($data);
     }
 
     #[Route('/products/{id}', name: 'api_product_detail', methods: ['GET'])]
-    public function detail(string $id, ProductRepository $productRepository, CacheInterface $cache): JsonResponse
+    public function detail(string $id, ProductRepository $productRepository, CacheManager $cacheManager): JsonResponse
     {
         $cacheKey = 'producte_detall_' . $id;
 
-        $data = $cache->get($cacheKey, function (ItemInterface $item) use ($id, $productRepository) {
-            $item->expiresAfter(3600);
+        $data = $cacheManager->get($cacheKey);
 
+        if (!$data) {
             $product = $productRepository->find($id);
 
             if (!$product) {
-                return ['error' => 'Producte no trobat'];
+                return new JsonResponse(['error' => 'Producte no trobat'], 404);
             }
 
-            return [
+            $data = [
                 'id' => $product->getId(),
                 'name' => $product->getName(),
                 'description' => $product->getDescription(),
@@ -66,16 +66,30 @@ class ProductApiController extends AbstractController
                 'image' => $product->getImage(),
                 'stock' => $product->getStock()
             ];
-        });
 
-        if (isset($data['error'])) {
-            return new JsonResponse($data, 404);
+            $cacheManager->set($cacheKey, $data, 3600);
         }
 
         return new JsonResponse($data);
     }
 
     #[Route('/order', name: 'api_make_order', methods: ['POST'])]
+    #[OA\RequestBody(
+        description: "Dades necessàries per crear una comanda",
+        required: true,
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "email", type: "string", example: "client@terraacasa.cat"),
+                new OA\Property(property: "product_id", type: "string", example: "ID-DEL-PRODUCTE-AQUI"),
+                new OA\Property(property: "total_price", type: "integer", example: 1500, description: "Preu en cèntims")
+            ],
+            type: "object"
+        )
+    )]
+    #[OA\Response(
+        response: 200,
+        description: "Retorna l'ID de la transacció i l'enllaç de pagament de Stripe"
+    )]
     public function makeOrder(
         Request $request,
         ProductRepository $productRepository,
