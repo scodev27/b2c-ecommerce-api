@@ -14,42 +14,65 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\Cache\ItemInterface;
 
 #[Route('/api')]
 class ProductApiController extends AbstractController
 {
     #[Route('/products', name: 'api_products_list', methods: ['GET'])]
-    public function list(ProductRepository $productRepository): JsonResponse
+    public function list(ProductRepository $productRepository, CacheInterface $cache): JsonResponse
     {
-        $products = $productRepository->findAll();
-        $data = [];
-        foreach ($products as $product) {
-            $data[] = [
-                'id' => $product->getId(),
-                'name' => $product->getName(),
-                'price' => $product->getPrice() / 100,
-                'image' => $product->getImage(),
-            ];
-        }
+        $data = $cache->get('productes_cataleg', function (ItemInterface $item) use ($productRepository) {
+            $item->expiresAfter(3600);
+
+            $products = $productRepository->findAll();
+            $result = [];
+
+            foreach ($products as $product) {
+                $result[] = [
+                    'id' => $product->getId(),
+                    'name' => $product->getName(),
+                    'price' => $product->getPrice() / 100,
+                    'image' => $product->getImage(),
+                ];
+            }
+
+            return $result;
+        });
+
         return new JsonResponse($data);
     }
 
     #[Route('/products/{id}', name: 'api_product_detail', methods: ['GET'])]
-    public function detail(string $id, ProductRepository $productRepository): JsonResponse
+    public function detail(string $id, ProductRepository $productRepository, CacheInterface $cache): JsonResponse
     {
-        $product = $productRepository->find($id);
-        if (!$product) {
-            return new JsonResponse(['error' => 'Producte no trobat'], 404);
+        $cacheKey = 'producte_detall_' . $id;
+
+        $data = $cache->get($cacheKey, function (ItemInterface $item) use ($id, $productRepository) {
+            $item->expiresAfter(3600);
+
+            $product = $productRepository->find($id);
+
+            if (!$product) {
+                return ['error' => 'Producte no trobat'];
+            }
+
+            return [
+                'id' => $product->getId(),
+                'name' => $product->getName(),
+                'description' => $product->getDescription(),
+                'price' => $product->getPrice() / 100,
+                'image' => $product->getImage(),
+                'stock' => $product->getStock()
+            ];
+        });
+
+        if (isset($data['error'])) {
+            return new JsonResponse($data, 404);
         }
 
-        return new JsonResponse([
-            'id' => $product->getId(),
-            'name' => $product->getName(),
-            'description' => $product->getDescription(),
-            'price' => $product->getPrice() / 100,
-            'image' => $product->getImage(),
-            'stock' => $product->getStock()
-        ]);
+        return new JsonResponse($data);
     }
 
     #[Route('/order', name: 'api_make_order', methods: ['POST'])]
