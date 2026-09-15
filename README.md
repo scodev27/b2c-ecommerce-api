@@ -1,107 +1,110 @@
-# Terra a Casa
-Aquest projecte és el desenvolupament de l'assignatura Sistemes de Comerç Electrònic. És una aplicació web B2C construïda amb **Symfony** que posa en contacte pagesos amb clients finals per a la venda de capses de verdura fresca.
+# B2C E-Commerce Platform API
 
-## 🚀 Desplegament i Ports
+A lightweight, decoupled B2C e-commerce platform built with Symfony. This project serves as a complete backend solution for managing a digital storefront, featuring a RESTful API, asynchronous background processing, secure payment gateway integration, and an administrative backoffice.
 
-Per executar aquest projecte correctament, calen dos servidors funcionant de forma simultània:
+## 🚀 Key Features
 
-1. **Backend (Symfony + Base de dades):**
-   - Executar: `symfony server:start`
-   - Port: `http://localhost:8000`
-   - L'API respondrà sota `/api` i el Backoffice d'administració està a `/admin`.
+*   **Decoupled Architecture:** A clean RESTful API designed to be consumed by any frontend (SPA, Mobile App, etc.).
+*   **Asynchronous Processing:** Background workers handle email notifications and non-blocking tasks using Symfony Messenger, ensuring lightning-fast API responses.
+*   **Payment Integration:** Server-to-server secure integration with the **Stripe API** for checkout sessions.
+*   **Interactive API Docs:** Auto-generated OpenAPI (Swagger) documentation.
+*   **Admin Backoffice:** Secure dashboard for inventory and order management.
 
-2. **Frontend (Botiga per als clients):**
-   - Executar mitjançant Live Server (VS Code) o similar.
-   - Port: `http://localhost:5500`
-   - Aquesta és la interfície principal on els usuaris fan les compres.
+## 🛠️ Tech Stack
 
-## 📦 Manual de Desplegament
+*   **Backend:** PHP, Symfony, Doctrine ORM
+*   **Database:** MariaDB / MySQL
+*   **Message Broker / Queues:** Symfony Messenger
+*   **Payments:** Stripe API
+*   **API Documentation:** OpenAPI / NelmioApiDocBundle
+*   **Frontend (Demo):** Vanilla JS Single Page Application (SPA)
 
-A continuació es detallen les comandes pas a pas per posar en marxa el projecte en un entorn local:
+---
 
-**1. Descarregar dependències:**
-```bash
-composer install
-```
+## 🧩 System Architecture
 
-**2. Configurar l'entorn i Base de Dades:**
-Crea un fitxer `.env.local` a l'arrel del projecte. Configura la connexió a la base de dades (ajusta la versió de MariaDB/MySQL segons el teu entorn per evitar problemes amb el Messenger) i afegeix la clau de Stripe:
-```env
-DATABASE_URL="mysql://root:@127.0.0.1:3306/terra_a_casa?serverVersion=mariadb-10.4.0&charset=utf8mb4"
-STRIPE_SECRET_KEY="sk_test_POSAR_CLAU_STRIPE"
-```
+The system follows a microservices-inspired workflow with the following core components:
 
-**3. Crear la Base de Dades i l'Estructura:**
-```bash
-php bin/console doctrine:database:create
-php bin/console doctrine:schema:update --force
-php bin/console messenger:setup-transports
-```
+1.  **Frontend (Client):** A lightweight SPA consuming data via HTTP fetch requests.
+2.  **REST API (Backend):** The central core processing business logic and handling authentication.
+3.  **Database:** Relational schema storing the catalog, users, and orders (interacted via Doctrine ORM).
+4.  **Stripe Gateway:** External service connected via backend to request secure payment sessions.
+5.  **Async Worker:** A background process consuming the queue (`messenger_messages`) to dispatch transactional emails without blocking the HTTP request thread.
 
-**4. Carregar dades de prova (Fixtures):**
-S'ha creat un arxiu Fixtures que carrega un usuari Administrador i els 3 productes base.
-```bash
-php bin/console doctrine:fixtures:load --append
-```
-*Credencials de l'Admin creat:* `admin@terraacasa.cat` / `123456`
+---
 
-**5. Executar l'aplicació:**
-Per simular un entorn de producció i provar processos asíncrons, es necessiten dues terminals:
+## 📦 Installation & Setup
 
-*Terminal 1 (Servidor Web - Port 8000 per defecte):*
+**Prerequisites:** PHP 8.x, Composer, MariaDB/MySQL, and a Stripe Test Account.
+
+1. **Install dependencies:**
+   ```bash
+   composer install
+   ```
+
+2. **Environment Configuration:** 
+   Create a `.env.local` file in the project root to configure your database connection and Stripe keys:
+   ```env
+   DATABASE_URL="mysql://root:@127.0.0.1:3306/terra_a_casa?serverVersion=mariadb-10.4.0&charset=utf8mb4"
+   STRIPE_SECRET_KEY="sk_test_YOUR_STRIPE_KEY"
+   ```
+
+3. **Database Initialization:**
+   Create the database, update the schema, and setup the messenger transports:
+   ```bash
+   php bin/console doctrine:database:create
+   php bin/console doctrine:schema:update --force
+   php bin/console messenger:setup-transports
+   ```
+
+4. **Load Fixtures (Test Data):**
+   Seed the database with an admin user and a base product catalog:
+   ```bash
+   php bin/console doctrine:fixtures:load --append
+   ```
+   *Admin Credentials:* `admin@terraacasa.cat` / `123456`
+
+---
+
+## ⚙️ Running the Application
+
+To simulate a full production environment with asynchronous tasks, you need to run three separate processes (terminals):
+
+**Terminal 1: Start the Backend API (Port 8000)**
 ```bash
 symfony server:start
 ```
 
-*Terminal 2 (Worker de processos asíncrons per a l'enviament de correus):*
+**Terminal 2: Start the Async Worker (Message Queue Consumer)**
 ```bash
 php bin/console messenger:consume async -vv --no-debug
 ```
 
-*Terminal 3 (Servidor Frontend - Botiga per als clients):*
+**Terminal 3: Start the Frontend Client (Port 5500)**
 ```bash
 php -S localhost:5500
 ```
 
 ---
 
-## 📡 Documentació de l'API
+## 📡 API Documentation & Endpoints
 
-El projecte exposa diversos endpoints per interactuar amb la plataforma des d'aplicacions externes (com una App mòbil o un servei de tercers):
-
-*   **Llistar productes:** `GET /api/products`
-    *   **Retorn:** Format JSON amb els detalls bàsics de les capses (ID, nom i preu).
-*   **Detall d'un producte:** `GET /api/products/{id}`
-    *   **Retorn:** Format JSON amb tota la informació ampliada (ID, nom, descripció, preu, imatge i estoc).
-*   **Crear una comanda:** `POST /api/order`
-    *   **Petició (Body):** Requereix un JSON amb l'`email` del client i el `product_id`.
-    *   **Retorn:** Genera la comanda, desencadena l'enviament asíncron del correu electrònic i retorna un JSON amb el `transaction_id` i la `payment_url` (enllaç de pagament segur de Stripe).
-
-### 📖 Swagger UI
-Per fer fàcil l'exploració i prova dels endpoints, s'ha implementat **NelmioApiDocBundle**, que autogenera la documentació interactiva sota l'estàndard OpenAPI.
-
-Per visualitzar la documentació del servei (un cop el servidor estigui engegat), visita la següent adreça al navegador:
-
+The API is fully documented using the OpenAPI standard. Once the backend server is running, you can access the interactive **Swagger UI** at:
 👉 `http://localhost:8000/api/doc`
 
-## 🧩 Esquema dels Serveis
+### Core Endpoints
 
-El sistema funciona mitjançant una arquitectura de microserveis lleugera on interactuen les següents peces:
+*   `GET /api/products` - Retrieve the catalog list (ID, name, price).
+*   `GET /api/products/{id}` - Retrieve detailed product information including stock and images.
+*   `POST /api/order` - Create a new order.
+    *   *Payload:* `{ "email": "customer@example.com", "product_id": 1 }`
+    *   *Action:* Triggers the async email worker and generates a Stripe payment session.
+    *   *Response:* Returns a JSON with the `transaction_id` and the Stripe `payment_url`.
 
-1.  **Frontend (Client):** Aplicació SPA (Single Page Application) amb HTML/JS Vanilla que s'executa al navegador del client. Consumeix les dades via HTTP `fetch`.
-2.  **API REST (Backend):** Servidor Symfony que actua com a "cervell" central. Rep les peticions del Frontend i processa la lògica de negoci.
-3.  **Base de Dades:** MariaDB/MySQL que emmagatzema persistentment el catàleg i les vendes. Només es comunica amb el Backend (mitjançant l'ORM Doctrine).
-4.  **Stripe API (Gateway de pagament):** Servei extern. El Backend s'hi connecta de servidor a servidor per demanar una sessió de pagament segura i retorna la URL al Frontend.
-5.  **Messenger Worker (Processos Asíncrons):** Servei en segon pla del Backend que s'encarrega d'enviar els correus electrònics sense bloquejar la resposta ràpida cap al client.
+## 🗄️ Database Schema
 
-### 🔐 Autenticació
-Actualment, l'endpoint `/api/products` és de caràcter públic per permetre la visualització del catàleg sense registre previ, alineant-se amb l'experiència d'usuari de la web principal on qualsevol visitant pot veure l'aparador sense estar autenticat. L'autenticació queda reservada exclusivament per al Backoffice (ruta `/admin` i `/login`).
-
-## 🗄️ Base de Dades i Taules
-
-L'estructura de la base de dades s'ha dissenyat de manera relacional. S'adjunta el fitxer `terra_a_casa.sql` amb el bolcat sencer de l'estructura i les dades de prova. Les taules principals creades són:
-
-*   `user`: Emmagatzema les credencials dels administradors (email, password encriptat i rols) per accedir al Backoffice.
-*   `product`: Catàleg de la botiga (nom, descripció, preu, imatge i estoc).
-*   `order`: Registre de les comandes creades (email del client, preu total, estat del pagament, session_id de Stripe i data).
-*   `messenger_messages`: Taula interna de Symfony per gestionar la cua de correus electrònics asíncrons.
+The relational database is built with the following core entities:
+*   `user`: Admin credentials (hashed passwords, roles) for Backoffice access.
+*   `product`: Store catalog (name, description, price, image, stock).
+*   `order`: Order records (customer email, total price, payment status, Stripe `session_id`, timestamp).
+*   `messenger_messages`: Symfony's internal table for handling the asynchronous task queue.
